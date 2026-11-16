@@ -1,11 +1,13 @@
 name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    paths:
+      - 'www/**'
+      - 'package.json'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -21,12 +23,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ===== 2. Setup Node.js (version stable v3) =====
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
+      # ===== 2. Install Node.js manually (via nvm) =====
+      - name: Install Node.js via nvm
+        run: |
+          # Install nvm
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          
+          # Install Node.js 20
+          nvm install 20
+          nvm use 20
+          
+          # Verify
+          node --version
+          npm --version
+          
+          # Add to PATH for subsequent steps
+          echo "export NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
+          echo "[ -s \"$NVM_DIR/nvm.sh\" ] && \. \"$NVM_DIR/nvm.sh\"" >> $GITHUB_ENV
+          echo "nvm use 20" >> $GITHUB_ENV
 
       # ===== 3. Install npm dependencies =====
       - name: Install npm dependencies
@@ -76,12 +92,11 @@ jobs:
         run: |
           APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" 2>/dev/null | head -1)
           if [ -z "$APK_PATH" ]; then
-            echo "::error::No APK found in android/app/build/outputs/apk/debug/"
+            echo "::error::No APK found!"
             ls -la android/app/build/outputs/apk/debug/ || true
             exit 1
           fi
           cp "$APK_PATH" GoMark-app-debug-${{ github.run_number }}.apk
-          echo "APK renamed to GoMark-app-debug-${{ github.run_number }}.apk"
 
       # ===== 11. Upload artifact =====
       - name: Upload APK artifact
