@@ -37,6 +37,7 @@
     "@zxing/library": "^0.20.0"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "typescript": "^5.3.3"
   }
 }
