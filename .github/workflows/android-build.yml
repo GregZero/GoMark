@@ -43,18 +43,9 @@ jobs:
 
       # ===== 5. Setup Android SDK =====
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            platform-tools
-          accept-android-sdk-licenses: true
-          log-accepted-android-sdk-licenses: true
-
-      # ===== 5b. Accept all Android SDK licenses =====
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses > /dev/null
+          packages: platforms;android-34 build-tools;34.0.0 platform-tools
 
       # ===== 6. Install Capacitor CLI globally =====
       - name: Install Capacitor CLI
