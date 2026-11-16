@@ -23,26 +23,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ===== 2. Install Node.js manually (via nvm) =====
-      - name: Install Node.js via nvm
+      # ===== 2. Verify Node.js is available =====
+      - name: Check Node.js version
         run: |
-          # Install nvm
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          
-          # Install Node.js 20
-          nvm install 20
-          nvm use 20
-          
-          # Verify
-          node --version
-          npm --version
-          
-          # Add to PATH for subsequent steps
-          echo "export NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
-          echo "[ -s \"$NVM_DIR/nvm.sh\" ] && \. \"$NVM_DIR/nvm.sh\"" >> $GITHUB_ENV
-          echo "nvm use 20" >> $GITHUB_ENV
+          node --version || echo "Node.js not found"
+          npm --version || echo "npm not found"
 
       # ===== 3. Install npm dependencies =====
       - name: Install npm dependencies
