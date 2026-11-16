@@ -52,6 +52,10 @@ jobs:
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
 
+      # ===== 5b. Accept all Android SDK licenses =====
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null
+
       # ===== 6. Install Capacitor CLI globally =====
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli@5 @capacitor/core@5 @capacitor/android@5
