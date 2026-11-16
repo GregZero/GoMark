@@ -1,0 +1,42 @@
+{
+  "name": "gomark",
+  "version": "1.0.0",
+  "description": "Gestionnaire de cartes de fidélité et listes de courses avec synchronisation Syncthing",
+  "main": "www/index.html",
+  "scripts": {
+    "start": "npx http-server www -p 8000",
+    "serve": "npx http-server www -p 8000",
+    "build": "npm run build:web && npm run build:android",
+    "build:web": "echo 'Web assets are ready in www/'",
+    "build:android": "npm run capacitor:add:android && npm run capacitor:sync",
+    "capacitor:init": "npx cap init",
+    "capacitor:add:android": "npx cap add android",
+    "capacitor:sync": "npx cap sync android",
+    "capacitor:copy": "npx cap copy android",
+    "capacitor:open:android": "npx cap open android",
+    "android:build": "cd android && ./gradlew assembleDebug",
+    "android:release": "cd android && ./gradlew assembleRelease",
+    "clean": "rm -rf android node_modules"
+  },
+  "keywords": [
+    "loyalty-cards",
+    "shopping-list",
+    "barcode-scanner",
+    "syncthing",
+    "pwa",
+    "offline",
+    "android",
+    "capacitor"
+  ],
+  "author": "GregZero",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor-community/barcode-scanner": "^5.0.0",
+    "@zxing/library": "^0.20.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

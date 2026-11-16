@@ -28,9 +28,22 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Android
+*.iml
+*.ipr
+*.iws
+build/
+.gradle/
+local.properties
+
+# Gradle
+.gradle
+
 # Test
 coverage/
 
 # Data (should be in user's chosen directory)
 data/
-*.json
+
+# Capacitor cache
+.cap/

@@ -1,0 +1,92 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Récupérer le code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Installer Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Installer les dépendances npm
+      - name: Install npm dependencies
+        run: npm ci
+
+      # 4. Installer Java 17 (nécessaire pour Android)
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 5. Installer le SDK Android
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0 platform-tools'
+          accept-licenses: yes
+
+      # 6. Installer Capacitor CLI globalement
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli @capacitor/core
+
+      # 7. Ajouter la plateforme Android
+      - name: Add Android platform
+        run: npx cap add android
+
+      # 8. Synchroniser avec Capacitor
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # 9. Builder l'APK Debug
+      - name: Build APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+        env:
+          # Désactiver l'animation Gradle pour accélérer
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+      # 10. Renommer l'APK pour plus de clarté
+      - name: Rename APK
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -1)
+          if [ -n "$APK_PATH" ]; then
+            cp "$APK_PATH" GoMark-app-debug.apk
+          fi
+
+      # 11. Publier l'APK comme artefact
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoMark-android-apk
+          path: GoMark-app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # 12. (Optionnel) Créer une release si c'est un tag
+      - name: Create Release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: GoMark-app-debug.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
