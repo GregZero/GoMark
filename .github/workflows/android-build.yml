@@ -3,6 +3,10 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'BUILD.md'
+      - '.gitignore'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -14,79 +18,91 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     steps:
-      # 1. Récupérer le code
+      # ===== 1. Préparation =====
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # 2. Installer Node.js
+      # ===== 2. Setup Node.js =====
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      # 3. Installer les dépendances npm
+      # ===== 3. Installer les dépendances npm =====
       - name: Install npm dependencies
         run: npm ci
 
-      # 4. Installer Java 17 (nécessaire pour Android)
+      # ===== 4. Setup Java =====
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      # 5. Installer le SDK Android
+      # ===== 5. Setup Android SDK =====
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v3
         with:
-          packages: 'platforms;android-35 build-tools;35.0.0 platform-tools'
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+            platform-tools
           accept-licenses: yes
 
-      # 6. Installer Capacitor CLI globalement
+      # ===== 6. Installer Capacitor CLI =====
       - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli @capacitor/core
+        run: npm install -g @capacitor/cli @capacitor/core @capacitor/android
 
-      # 7. Ajouter la plateforme Android
+      # ===== 7. Ajouter la plateforme Android =====
       - name: Add Android platform
         run: npx cap add android
 
-      # 8. Synchroniser avec Capacitor
+      # ===== 8. Synchroniser avec Capacitor =====
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # 9. Builder l'APK Debug
+      # ===== 9. Builder l'APK Debug =====
       - name: Build APK
-        run: cd android && ./gradlew assembleDebug --no-daemon
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
         env:
-          # Désactiver l'animation Gradle pour accélérer
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+          GRADLE_OPTS: "-Xmx4g -Dorg.gradle.daemon=false"
 
-      # 10. Renommer l'APK pour plus de clarté
+      # ===== 10. Renommer l'APK =====
       - name: Rename APK
         run: |
           APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -1)
           if [ -n "$APK_PATH" ]; then
-            cp "$APK_PATH" GoMark-app-debug.apk
+            cp "$APK_PATH" GoMark-app-debug-${{ github.run_number }}.apk
+          else
+            echo "::error::APK not found!"
+            exit 1
           fi
 
-      # 11. Publier l'APK comme artefact
+      # ===== 11. Publier l'APK comme artefact =====
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: GoMark-android-apk
-          path: GoMark-app-debug.apk
+          path: GoMark-app-debug-*.apk
           if-no-files-found: error
           retention-days: 30
 
-      # 12. (Optionnel) Créer une release si c'est un tag
+      # ===== 12. Créer une Release (si tag) =====
       - name: Create Release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: GoMark-app-debug.apk
+          files: GoMark-app-debug-*.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
