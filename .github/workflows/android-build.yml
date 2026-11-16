@@ -49,11 +49,12 @@ jobs:
             platforms;android-34
             build-tools;34.0.0
             platform-tools
-          accept-licenses: yes
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
 
       # ===== 6. Install Capacitor CLI globally =====
       - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli@6 @capacitor/core@6 @capacitor/android@6
+        run: npm install -g @capacitor/cli@5 @capacitor/core@5 @capacitor/android@5
 
       # ===== 7. Add Android platform =====
       - name: Add Android platform
