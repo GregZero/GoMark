@@ -58,6 +58,9 @@ async function init() {
         shoppingLists = new ShoppingListManager(storage);
         barcodeScanner = new BarcodeScanner(handleBarcodeScanned);
         
+        // Make barcodeScanner available globally for modules
+        window.barcodeScanner = barcodeScanner;
+        
         // Load data
         await loyaltyCards.load();
         await shoppingLists.load();
@@ -68,6 +71,9 @@ async function init() {
         
         // Render data
         renderAll();
+        
+        // Update folder display
+        updateSelectedFolderDisplay();
         
         showToast('GoMark est prêt!', 'success');
         
@@ -85,15 +91,17 @@ function buildUI() {
             <p>Gestionnaire de cartes de fidélité et listes de courses</p>
         </header>
         <div class="container">
-            <div style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+            <div style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <button class="btn btn-info" id="selectFolderBtn">📁 Choisir dossier</button>
                 <button class="btn btn-secondary" id="refreshBtn">🔄 Rafraîchir</button>
+                <span id="selectedFolderDisplay" style="margin-left: 10px; font-size: 14px; color: var(--text-light);"></span>
             </div>
             
             <div style="margin: 20px 0;">
                 <button class="btn btn-primary" id="scanCardBtn">📷 Scanner une carte</button>
                 <button class="btn btn-secondary" id="addCardBtn">➕ Ajouter carte</button>
                 <button class="btn btn-primary" id="newListBtn">➕ Nouvelle liste</button>
+                <button class="btn btn-danger" id="cancelScanBtn" style="display: none;">❌ Annuler scan</button>
             </div>
             
             <h2>💳 Cartes de fidélité</h2>
@@ -157,6 +165,7 @@ function setupEventListeners() {
             const success = await storage.selectDirectory();
             if (success) {
                 await refreshData();
+                updateSelectedFolderDisplay();
                 showToast('Dossier sélectionné!', 'success');
             }
         } catch (error) {
@@ -164,11 +173,31 @@ function setupEventListeners() {
         }
     });
     
+    // Update selected folder display
+    function updateSelectedFolderDisplay() {
+        const display = document.getElementById('selectedFolderDisplay');
+        const dirName = storage.getSelectedDirectoryName();
+        if (dirName) {
+            display.textContent = 'Dossier: ' + escapeHtml(dirName);
+        } else {
+            display.textContent = 'Aucun dossier sélectionné (stockage local)';
+        }
+    }
+    
     // Refresh
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
     
     // Scan card
     document.getElementById('scanCardBtn').addEventListener('click', scanCard);
+    
+    // Cancel scan
+    document.getElementById('cancelScanBtn').addEventListener('click', () => {
+        if (barcodeScanner) {
+            barcodeScanner.stop();
+        }
+        document.getElementById('cancelScanBtn').style.display = 'none';
+        document.getElementById('scanCardBtn').disabled = false;
+    });
     
     // Add card
     document.getElementById('addCardBtn').addEventListener('click', () => showCardModal());
@@ -197,8 +226,20 @@ function setupEventListeners() {
 // Barcode Scanner
 function scanCard() {
     try {
-        barcodeScanner.scan();
+        document.getElementById('scanCardBtn').disabled = true;
+        document.getElementById('cancelScanBtn').style.display = 'inline-block';
+        
+        barcodeScanner.scan().then(() => {
+            document.getElementById('cancelScanBtn').style.display = 'none';
+            document.getElementById('scanCardBtn').disabled = false;
+        }).catch(error => {
+            document.getElementById('cancelScanBtn').style.display = 'none';
+            document.getElementById('scanCardBtn').disabled = false;
+            showToast('Erreur de scan: ' + error.message, 'error');
+        });
     } catch (error) {
+        document.getElementById('cancelScanBtn').style.display = 'none';
+        document.getElementById('scanCardBtn').disabled = false;
         showToast('Erreur: ' + error.message, 'error');
     }
 }

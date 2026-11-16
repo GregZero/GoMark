@@ -39,16 +39,16 @@ class StorageManager {
 
     // Vérifier si un dossier est déjà sélectionné
     async checkDirectory() {
-        if (localStorage.getItem('storageSelected') === 'true') {
-            try {
-                // En production, on pourrait stocker le handle de manière persistante
-                // Pour l'instant, on demande à l'utilisateur de le resélectionner
-                return false;
-            } catch (error) {
-                return false;
-            }
-        }
-        return false;
+        // Vérifier si un dossier a été sélectionné précédemment
+        // Note: Le File System Access API ne permet pas de persister les handles
+        // entre les sessions, donc on doit demander à l'utilisateur de resélectionner
+        // Cependant, on peut indiquer qu'un dossier a été sélectionné
+        return localStorage.getItem('storageSelected') === 'true';
+    }
+
+    // Obtenir le nom du dossier sélectionné
+    getSelectedDirectoryName() {
+        return localStorage.getItem('storageDirectoryName') || null;
     }
 
     // Lire un fichier

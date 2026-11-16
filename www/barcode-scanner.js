@@ -75,14 +75,22 @@ class BarcodeScanner {
             this.videoElement = document.createElement('video');
             this.videoElement.srcObject = stream;
             this.videoElement.play();
-            this.videoElement.style.display = 'none';
+            // NE PAS cacher la vidéo - l'utilisateur doit voir ce qu'il scanne
+            this.videoElement.style.position = 'fixed';
+            this.videoElement.style.top = '0';
+            this.videoElement.style.left = '0';
+            this.videoElement.style.width = '100%';
+            this.videoElement.style.height = '100%';
+            this.videoElement.style.objectFit = 'cover';
+            this.videoElement.style.zIndex = '9999';
+            this.videoElement.style.backgroundColor = 'rgba(0,0,0,0.5)';
             document.body.appendChild(this.videoElement);
 
             // Attendre que la vidéo soit prête
             await new Promise(resolve => this.videoElement.onloadedmetadata = resolve);
 
-            // Initialiser le code reader
-            this.codeReader = new ZXing.BrowserQRCodeReader();
+            // Initialiser le code reader avec l'API moderne
+            this.codeReader = new ZXing.BrowserMultiFormatReader();
             
             // Configuration des formats supportés
             const hints = new Map();
@@ -102,25 +110,35 @@ class BarcodeScanner {
             ]);
 
             // Lire le code-barres
+            // Note: decodeFromVideoDevice retourne une Promise qui se résout avec le résultat
+            // mais nous utilisons des callbacks pour gérer les résultats continus
             const result = await this.codeReader.decodeFromVideoDevice(
-                null,
+                undefined,
                 this.videoElement,
-                (result, error) => {
-                    if (result) {
+                {
+                    onSuccess: (result) => {
                         this.cleanup();
                         this.onResult({
                             text: result.text,
                             format: result.format
                         });
-                    }
-                    if (error) {
+                    },
+                    onError: (error) => {
                         console.error("Erreur ZXing:", error);
                     }
-                },
-                hints
+                }
             );
 
-            return result.text;
+            // Si on arrive ici, c'est que la promesse a été résolue avec un résultat
+            if (result) {
+                this.cleanup();
+                this.onResult({
+                    text: result.text,
+                    format: result.format
+                });
+            }
+            
+            return result ? result.text : null;
 
         } catch (error) {
             this.cleanup();
@@ -158,17 +176,32 @@ class BarcodeScanner {
         canvas.height = height;
 
         try {
-            const writer = new ZXing.BrowserQRCodeWriter();
-            const zxingFormat = this.getZXingFormat(format);
-
-            if (zxingFormat) {
+            // Normaliser le format
+            const normalizedFormat = this.normalizeBarcodeFormat(format);
+            
+            // Pour les QR codes, utiliser ZXing
+            if (normalizedFormat === 'QR_CODE') {
+                const zxingFormat = ZXing.Format.QR_CODE;
+                const writer = new ZXing.BrowserQRCodeWriter();
                 writer.write(canvas, text, width, height, {
                     format: zxingFormat,
                     margin: 0
                 });
             } else {
-                // Fallback pour les formats non supportés
-                this.drawTextBarcode(canvas, text, width, height);
+                // Pour les codes-barres 1D, utiliser JsBarcode
+                if (typeof JsBarcode !== 'undefined') {
+                    JsBarcode(canvas, text, {
+                        format: normalizedFormat,
+                        lineColor: '#000000',
+                        width: 2,
+                        height: height,
+                        displayValue: false,
+                        margin: 0
+                    });
+                } else {
+                    // Fallback si JsBarcode n'est pas chargé
+                    this.drawTextBarcode(canvas, text, width, height);
+                }
             }
 
             return canvas.toDataURL('image/png');
@@ -177,6 +210,27 @@ class BarcodeScanner {
             this.drawTextBarcode(canvas, text, width, height);
             return canvas.toDataURL('image/png');
         }
+    }
+
+    // Normaliser le format de code-barres pour JsBarcode
+    normalizeBarcodeFormat(format) {
+        if (!format) return 'CODE128';
+        
+        const formatMap = {
+            'AZTEC': 'aztec',
+            'CODABAR': 'codabar',
+            'CODE_39': 'CODE39',
+            'CODE_128': 'CODE128',
+            'DATA_MATRIX': 'datamatrix',
+            'EAN_8': 'EAN8',
+            'EAN_13': 'EAN13',
+            'ITF': 'ITF',
+            'PDF_417': 'pdf417',
+            'QR_CODE': 'QR_CODE',
+            'UPC_A': 'UPC'
+        };
+        
+        return formatMap[format.toUpperCase()] || 'CODE128';
     }
 
     // Convertir le type de barcode pour ZXing
