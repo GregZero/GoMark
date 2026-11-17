@@ -3,17 +3,14 @@ set -e
 
 echo "Patching Android project for directory picker..."
 
-# Add plugin to settings.gradle
-echo "" >> android/settings.gradle
-echo "// Directory Picker Plugin" >> android/settings.gradle
-echo "include ':capacitor-directory-picker'" >> android/settings.gradle
-echo "project(':capacitor-directory-picker').projectDir = new File(rootProject.projectDir, '../directory-picker/android')" >> android/settings.gradle
+# Create directory for the plugin in the main android project
+mkdir -p android/app/src/main/java/com/gregzero/gomark/directorypicker
 
-# Add dependency to app/build.gradle
-if grep -q "implementation project(':capacitor-community-barcode-scanner')" android/app/build.gradle; then
-    sed -i '/implementation project(\":capacitor-community-barcode-scanner\">/a\    implementation project(\":capacitor-directory-picker\")' android/app/build.gradle
-else
-    sed -i '/dependencies {/a\    implementation project(\":capacitor-directory-picker\")' android/app/build.gradle
-fi
+# Copy the Java file from directory-picker to android project
+cp directory-picker/android/src/main/java/com/gregzero/gomark/directorypicker/DirectoryPickerPlugin.java \
+   android/app/src/main/java/com/gregzero/gomark/directorypicker/DirectoryPickerPlugin.java
+
+# No need to modify settings.gradle or build.gradle since the Java file is now part of the app
+# The plugin will be automatically compiled as part of the app
 
 echo "Android project patched successfully!"

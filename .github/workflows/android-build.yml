@@ -66,6 +66,16 @@ jobs:
           chmod +x scripts/patch-android.sh
           ./scripts/patch-android.sh
 
+      # ===== 8c. Register plugin in MainActivity =====
+      - name: Register DirectoryPicker plugin
+        run: |
+          # Add import for DirectoryPickerPlugin to MainActivity.java
+          sed -i '/import com.getcapacitor.Plugin;/a\    import com.gregzero.gomark.directorypicker.DirectoryPickerPlugin;' \
+            android/app/src/main/java/com/gregzero/gomark/MainActivity.java
+          # Add plugin registration
+          sed -i '/this.init(savedInstanceState, new ArrayList<Class<? extends Plugin>>() {/a\        add(DirectoryPickerPlugin.class);' \
+            android/app/src/main/java/com/gregzero/gomark/MainActivity.java
+
       # ===== 9. Build APK =====
       - name: Build APK
         run: |
