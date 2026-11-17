@@ -1,0 +1,30 @@
+{
+  "name": "@gomark/capacitor-directory-picker",
+  "version": "1.0.0",
+  "description": "Capacitor plugin for selecting directories on Android and web",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {},
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "keywords": [
+    "capacitor",
+    "plugin",
+    "directory",
+    "picker",
+    "android",
+    "file",
+    "folder"
+  ],
+  "author": "GregZero",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/core": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^5.0.0"
+  }
+}

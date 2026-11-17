@@ -163,19 +163,17 @@ function setupEventListeners() {
     // Select folder
     document.getElementById('selectFolderBtn').addEventListener('click', async () => {
         try {
-            // Vérifier si l'API est disponible avant de tenter
-            if (!storage.isFileSystemAvailable()) {
-                showToast('La sélection de dossier n\'est pas supportée sur mobile. Utilisation du stockage local.', 'info');
-                return;
-            }
-            
             const success = await storage.selectDirectory();
             if (success) {
                 await refreshData();
                 updateSelectedFolderDisplay();
                 showToast('Dossier sélectionné!', 'success');
             } else {
-                showToast('Sélection de dossier annulée', 'info');
+                // Ne pas afficher de message si annulé (AbortError est géré dans storage.js)
+                // Mais afficher un message si non supporté
+                if (!storage.isCapacitor() && !storage.isFileSystemAvailable()) {
+                    showToast('Sélection de dossier non supportée sur cet appareil', 'info');
+                }
             }
         } catch (error) {
             showToast('Erreur: ' + error.message, 'error');
@@ -185,16 +183,28 @@ function setupEventListeners() {
     // Update selected folder display
     function updateSelectedFolderDisplay() {
         const display = document.getElementById('selectedFolderDisplay');
-        const dirName = storage.getSelectedDirectoryName();
         
-        if (!storage.isFileSystemAvailable()) {
-            display.textContent = '📱 Mobile: stockage local automatique';
+        // Sur Android (APK)
+        if (storage.isCapacitor()) {
+            const path = storage.getDirectoryPath();
+            const name = storage.getSelectedDirectoryName();
+            if (path) {
+                display.textContent = '📁 Dossier: ' + escapeHtml(name || path);
+                display.style.color = 'var(--primary-color)';
+            } else {
+                display.textContent = '⚠️ Sélectionnez un dossier pour Syncthing';
+                display.style.color = 'var(--danger-color)';
+            }
+        }
+        // Sur navigateur desktop
+        else if (!storage.isFileSystemAvailable()) {
+            display.textContent = '📱 Navigateur mobile: stockage local automatique';
             display.style.color = 'var(--info-color)';
-        } else if (dirName && dirName !== 'localStorage (mobile)') {
-            display.textContent = '📁 Dossier: ' + escapeHtml(dirName);
+        } else if (storage.getSelectedDirectoryName()) {
+            display.textContent = '📁 Dossier: ' + escapeHtml(storage.getSelectedDirectoryName());
             display.style.color = 'var(--primary-color)';
         } else {
-            display.textContent = '⚠️ Stockage local (sélectionnez un dossier pour Syncthing)';
+            display.textContent = '⚠️ Sélectionnez un dossier pour Syncthing';
             display.style.color = 'var(--danger-color)';
         }
     }

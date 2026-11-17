@@ -26,22 +26,38 @@ class StorageManager {
 
     // Sélectionner un dossier
     async selectDirectory() {
-        // Sur mobile ou si API non supportée, on utilise localStorage
-        if (!this.isFileSystemAvailable()) {
-            console.warn("File System Access API non supporté sur cet appareil. Utilisation de localStorage.");
-            localStorage.setItem('storageSelected', 'false');
-            localStorage.setItem('storageDirectoryName', 'localStorage (mobile)');
-            return false;
-        }
-
         try {
-            this.directoryHandle = await window.showDirectoryPicker({
-                startIn: 'documents',
-                mode: 'readwrite'
-            });
-            localStorage.setItem('storageSelected', 'true');
-            localStorage.setItem('storageDirectoryName', this.directoryHandle.name);
-            return true;
+            // Sur Android (APK) - utiliser le plugin natif
+            if (typeof window.Capacitor !== 'undefined') {
+                const { DirectoryPicker } = window.Plugins;
+                if (DirectoryPicker && typeof DirectoryPicker.selectDirectory === 'function') {
+                    const result = await DirectoryPicker.selectDirectory();
+                    this.directoryHandle = result.path;
+                    localStorage.setItem('storageSelected', 'true');
+                    localStorage.setItem('storageDirectoryName', result.name);
+                    localStorage.setItem('storageDirectoryPath', result.path);
+                    localStorage.setItem('storageDirectoryUri', result.uri);
+                    return true;
+                }
+            }
+            
+            // Sur navigateur desktop
+            if ('showDirectoryPicker' in window) {
+                this.directoryHandle = await window.showDirectoryPicker({
+                    startIn: 'documents',
+                    mode: 'readwrite'
+                });
+                localStorage.setItem('storageSelected', 'true');
+                localStorage.setItem('storageDirectoryName', this.directoryHandle.name);
+                return true;
+            }
+            
+            // Fallback pour les navigateurs non supportés
+            console.warn("Sélection de dossier non supportée sur cet appareil. Utilisation de localStorage.");
+            localStorage.setItem('storageSelected', 'false');
+            localStorage.setItem('storageDirectoryName', 'localStorage');
+            return false;
+            
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error("Erreur de sélection du dossier:", error);
@@ -62,6 +78,21 @@ class StorageManager {
     // Obtenir le nom du dossier sélectionné
     getSelectedDirectoryName() {
         return localStorage.getItem('storageDirectoryName') || null;
+    }
+
+    // Obtenir le chemin du dossier (pour Android)
+    getDirectoryPath() {
+        return localStorage.getItem('storageDirectoryPath') || null;
+    }
+
+    // Obtenir l'URI du dossier (pour Android)
+    getDirectoryUri() {
+        return localStorage.getItem('storageDirectoryUri') || null;
+    }
+
+    // Vérifier si on est dans Capacitor (APK)
+    isCapacitor() {
+        return typeof window.Capacitor !== 'undefined';
     }
 
     // Lire un fichier
