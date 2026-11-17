@@ -94,7 +94,8 @@ function buildUI() {
             <div style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <button class="btn btn-info" id="selectFolderBtn">📁 Choisir dossier</button>
                 <button class="btn btn-secondary" id="refreshBtn">🔄 Rafraîchir</button>
-                <span id="selectedFolderDisplay" style="margin-left: 10px; font-size: 14px; color: var(--text-light);"></span>
+                <button class="btn btn-secondary" id="addTestDataBtn">🧪 Données de test</button>
+                <span id="selectedFolderDisplay" style="margin-left: 10px; font-size: 14px;"></span>
             </div>
             
             <div style="margin: 20px 0;">
@@ -177,15 +178,24 @@ function setupEventListeners() {
     function updateSelectedFolderDisplay() {
         const display = document.getElementById('selectedFolderDisplay');
         const dirName = storage.getSelectedDirectoryName();
-        if (dirName) {
-            display.textContent = 'Dossier: ' + escapeHtml(dirName);
+        
+        if (!storage.isFileSystemAvailable()) {
+            display.textContent = '📱 Mobile: stockage local automatique';
+            display.style.color = 'var(--info-color)';
+        } else if (dirName && dirName !== 'localStorage (mobile)') {
+            display.textContent = '📁 Dossier: ' + escapeHtml(dirName);
+            display.style.color = 'var(--primary-color)';
         } else {
-            display.textContent = 'Aucun dossier sélectionné (stockage local)';
+            display.textContent = '⚠️ Stockage local (sélectionnez un dossier pour Syncthing)';
+            display.style.color = 'var(--danger-color)';
         }
     }
     
     // Refresh
     document.getElementById('refreshBtn').addEventListener('click', refreshData);
+    
+    // Add test data
+    document.getElementById('addTestDataBtn').addEventListener('click', addTestData);
     
     // Scan card
     document.getElementById('scanCardBtn').addEventListener('click', scanCard);
@@ -542,6 +552,42 @@ function showToast(message, type = 'info') {
         toast.style.transform = 'translateX(20px)';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// Add test data
+async function addTestData() {
+    try {
+        const testCards = [
+            { store: 'Carrefour', cardId: '123456789012', barcodeType: 'EAN_13', note: 'Carte de fidélité' },
+            { store: 'Lidl', cardId: '987654321098', barcodeType: 'CODE_128', note: 'Carte client' },
+            { store: 'Auchan', cardId: 'QR123456789', barcodeType: 'QR_CODE', note: 'Carte QR' }
+        ];
+        
+        for (const card of testCards) {
+            await loyaltyCards.addCard(card);
+        }
+        
+        const testList = await shoppingLists.addList({
+            name: 'Courses de la semaine',
+            description: 'Liste de test'
+        });
+        
+        const testProducts = [
+            { name: 'Lait', quantity: '1L' },
+            { name: 'Pain', quantity: '1' },
+            { name: 'Œufs', quantity: '6' },
+            { name: 'Pommes', quantity: '1kg' }
+        ];
+        
+        for (const product of testProducts) {
+            await shoppingLists.addProduct(testList.id, product);
+        }
+        
+        renderAll();
+        showToast('Données de test ajoutées!', 'success');
+    } catch (error) {
+        showToast('Erreur: ' + error.message, 'error');
+    }
 }
 
 // Utility functions

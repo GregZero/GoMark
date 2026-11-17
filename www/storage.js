@@ -10,28 +10,41 @@ class StorageManager {
     constructor() {
         this.directoryHandle = null;
         this.fallbackData = {};
+        this.isMobile = this.detectMobile();
+        this.fileSystemSupported = 'showDirectoryPicker' in window;
+    }
+
+    // Détecter si on est sur mobile
+    detectMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    // Vérifier si File System Access API est disponible
+    isFileSystemAvailable() {
+        return this.fileSystemSupported && !this.isMobile;
     }
 
     // Sélectionner un dossier
     async selectDirectory() {
+        // Sur mobile ou si API non supportée, on utilise localStorage
+        if (!this.isFileSystemAvailable()) {
+            console.warn("File System Access API non supporté sur cet appareil. Utilisation de localStorage.");
+            localStorage.setItem('storageSelected', 'false');
+            localStorage.setItem('storageDirectoryName', 'localStorage (mobile)');
+            return false;
+        }
+
         try {
-            if ('showDirectoryPicker' in window) {
-                this.directoryHandle = await window.showDirectoryPicker({
-                    startIn: 'documents',
-                    mode: 'readwrite'
-                });
-                localStorage.setItem('storageSelected', 'true');
-                localStorage.setItem('storageDirectoryName', this.directoryHandle.name);
-                return true;
-            } else {
-                // Fallback pour les navigateurs non supportés
-                console.warn("File System Access API non supporté. Utilisation de localStorage.");
-                return false;
-            }
+            this.directoryHandle = await window.showDirectoryPicker({
+                startIn: 'documents',
+                mode: 'readwrite'
+            });
+            localStorage.setItem('storageSelected', 'true');
+            localStorage.setItem('storageDirectoryName', this.directoryHandle.name);
+            return true;
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error("Erreur de sélection du dossier:", error);
-                return false;
             }
             return false;
         }

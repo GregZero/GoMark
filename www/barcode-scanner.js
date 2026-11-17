@@ -21,6 +21,13 @@ class BarcodeScanner {
         if (typeof window.Capacitor !== 'undefined') {
             return this.scanWithCapacitor();
         } else {
+            // Vérifier si on est sur mobile - l'accès caméra peut être limité
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile && !window.location.href.startsWith('https://') && !window.location.href.includes('localhost')) {
+                throw new Error('Sur mobile, l\'accès à la caméra nécessite HTTPS ou localhost. Essayez l\'APK Android pour un meilleur fonctionnement.');
+            }
+            
             return this.scanWithZXing();
         }
     }
