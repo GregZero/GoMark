@@ -12,6 +12,15 @@ class StorageManager {
         this.fallbackData = {};
         this.isMobile = this.detectMobile();
         this.fileSystemSupported = 'showDirectoryPicker' in window;
+        
+        // Debug logging
+        if (window.debugLogger) {
+            window.debugLogger.log('StorageManager initialized', 'info', {
+                isMobile: this.isMobile,
+                fileSystemSupported: this.fileSystemSupported,
+                userAgent: navigator.userAgent
+            });
+        }
     }
 
     // Détecter si on est sur mobile
@@ -27,17 +36,41 @@ class StorageManager {
     // Sélectionner un dossier
     async selectDirectory() {
         try {
+            if (window.debugLogger) {
+                window.debugLogger.log('selectDirectory called', 'info', {
+                    isMobile: this.isMobile,
+                    hasCapacitor: typeof window.Capacitor !== 'undefined',
+                    hasPlugins: typeof window.Plugins !== 'undefined'
+                });
+            }
+            
             // Sur Android (APK) - utiliser le plugin natif
             if (typeof window.Capacitor !== 'undefined') {
+                if (window.debugLogger) {
+                    window.debugLogger.log('Capacitor detected, checking DirectoryPicker plugin', 'info');
+                }
                 const { DirectoryPicker } = window.Plugins;
                 if (DirectoryPicker && typeof DirectoryPicker.selectDirectory === 'function') {
+                    if (window.debugLogger) {
+                        window.debugLogger.log('DirectoryPicker plugin available, calling selectDirectory', 'info');
+                    }
                     const result = await DirectoryPicker.selectDirectory();
                     this.directoryHandle = result.path;
                     localStorage.setItem('storageSelected', 'true');
                     localStorage.setItem('storageDirectoryName', result.name);
                     localStorage.setItem('storageDirectoryPath', result.path);
                     localStorage.setItem('storageDirectoryUri', result.uri);
+                    if (window.debugLogger) {
+                        window.debugLogger.log('Directory selected successfully', 'info', result);
+                    }
                     return true;
+                } else {
+                    if (window.debugLogger) {
+                        window.debugLogger.log('DirectoryPicker plugin NOT available', 'error', {
+                            hasDirectoryPicker: !!DirectoryPicker,
+                            hasSelectDirectory: typeof DirectoryPicker?.selectDirectory === 'function'
+                        });
+                    }
                 }
             }
             
@@ -97,20 +130,35 @@ class StorageManager {
 
     // Lire un fichier
     async readFile(filename, defaultValue = null) {
+        if (window.debugLogger) {
+            window.debugLogger.log(`Reading file: ${filename}`, 'info', { hasDirectoryHandle: !!this.directoryHandle });
+        }
         if (this.directoryHandle) {
             try {
                 const fileHandle = await this.directoryHandle.getFile(filename);
                 const file = await fileHandle.getFile();
                 const content = await file.text();
+                if (window.debugLogger) {
+                    window.debugLogger.log(`File ${filename} read successfully`, 'info');
+                }
                 return JSON.parse(content);
             } catch (error) {
                 if (error.name === 'NotFoundError') {
+                    if (window.debugLogger) {
+                        window.debugLogger.log(`File ${filename} not found, returning default`, 'info');
+                    }
                     return defaultValue;
+                }
+                if (window.debugLogger) {
+                    window.debugLogger.error(`Error reading file ${filename}`, error);
                 }
                 console.error("Erreur de lecture:", error);
                 return defaultValue;
             }
         } else {
+            if (window.debugLogger) {
+                window.debugLogger.log(`Using localStorage fallback for ${filename}`, 'warn');
+            }
             // Fallback localStorage
             const data = localStorage.getItem(filename);
             return data ? JSON.parse(data) : defaultValue;
@@ -119,18 +167,30 @@ class StorageManager {
 
     // Écrire un fichier
     async writeFile(filename, data) {
+        if (window.debugLogger) {
+            window.debugLogger.log(`Writing file: ${filename}`, 'info', { hasDirectoryHandle: !!this.directoryHandle });
+        }
         if (this.directoryHandle) {
             try {
                 const fileHandle = await this.directoryHandle.getFile(filename, { create: true });
                 const writable = await fileHandle.createWritable();
                 await writable.write(JSON.stringify(data, null, 2));
                 await writable.close();
+                if (window.debugLogger) {
+                    window.debugLogger.log(`File ${filename} written successfully`, 'info');
+                }
                 return true;
             } catch (error) {
+                if (window.debugLogger) {
+                    window.debugLogger.error(`Error writing file ${filename}`, error);
+                }
                 console.error("Erreur d'écriture:", error);
                 return false;
             }
         } else {
+            if (window.debugLogger) {
+                window.debugLogger.log(`Using localStorage fallback for ${filename}`, 'warn');
+            }
             // Fallback localStorage
             localStorage.setItem(filename, JSON.stringify(data));
             return true;

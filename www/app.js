@@ -1,6 +1,14 @@
 // ===== GoMark Application =====
 // Gestionnaire de cartes de fidélité et listes de courses
 
+// Load debug module first
+const debugScript = document.createElement('script');
+debugScript.src = 'debug.js';
+debugScript.onload = function() {
+    console.log('Debug module loaded');
+};
+document.head.appendChild(debugScript);
+
 // Inject CSS
 function injectCSS() {
     const style = document.createElement('style');
@@ -52,17 +60,43 @@ async function init() {
     injectCSS();
     
     try {
+        if (window.debugLogger) {
+            window.debugLogger.log('Application initialization started', 'info');
+        }
+        
         // Initialize modules
+        if (window.debugLogger) {
+            window.debugLogger.log('Initializing StorageManager...', 'info');
+        }
         storage = new StorageManager();
+        
+        if (window.debugLogger) {
+            window.debugLogger.log('Initializing LoyaltyCardManager...', 'info');
+        }
         loyaltyCards = new LoyaltyCardManager(storage);
+        
+        if (window.debugLogger) {
+            window.debugLogger.log('Initializing ShoppingListManager...', 'info');
+        }
         shoppingLists = new ShoppingListManager(storage);
+        
+        if (window.debugLogger) {
+            window.debugLogger.log('Initializing BarcodeScanner...', 'info');
+        }
         barcodeScanner = new BarcodeScanner(handleBarcodeScanned);
         
         // Make barcodeScanner available globally for modules
         window.barcodeScanner = barcodeScanner;
         
         // Load data
+        if (window.debugLogger) {
+            window.debugLogger.log('Loading loyalty cards...', 'info');
+        }
         await loyaltyCards.load();
+        
+        if (window.debugLogger) {
+            window.debugLogger.log('Loading shopping lists...', 'info');
+        }
         await shoppingLists.load();
         
         // Build UI
@@ -75,9 +109,16 @@ async function init() {
         // Update folder display
         updateSelectedFolderDisplay();
         
+        if (window.debugLogger) {
+            window.debugLogger.log('Application initialized successfully', 'info');
+        }
+        
         showToast('GoMark est prêt!', 'success');
         
     } catch (error) {
+        if (window.debugLogger) {
+            window.debugLogger.error('Initialization error', error);
+        }
         console.error('Initialization error:', error);
         showToast('Erreur: ' + error.message, 'error');
     }
@@ -163,19 +204,34 @@ function setupEventListeners() {
     // Select folder
     document.getElementById('selectFolderBtn').addEventListener('click', async () => {
         try {
+            if (window.debugLogger) {
+                window.debugLogger.log('Select folder button clicked', 'info');
+            }
             const success = await storage.selectDirectory();
             if (success) {
+                if (window.debugLogger) {
+                    window.debugLogger.log('Folder selected successfully', 'info');
+                }
                 await refreshData();
                 updateSelectedFolderDisplay();
                 showToast('Dossier sélectionné!', 'success');
             } else {
+                if (window.debugLogger) {
+                    window.debugLogger.log('Folder selection failed or cancelled', 'warn');
+                }
                 // Ne pas afficher de message si annulé (AbortError est géré dans storage.js)
                 // Mais afficher un message si non supporté
                 if (!storage.isCapacitor() && !storage.isFileSystemAvailable()) {
+                    if (window.debugLogger) {
+                        window.debugLogger.log('File system not available on this device', 'warn');
+                    }
                     showToast('Sélection de dossier non supportée sur cet appareil', 'info');
                 }
             }
         } catch (error) {
+            if (window.debugLogger) {
+                window.debugLogger.error('Folder selection error', error);
+            }
             showToast('Erreur: ' + error.message, 'error');
         }
     });
@@ -254,18 +310,30 @@ function setupEventListeners() {
 // Barcode Scanner
 function scanCard() {
     try {
+        if (window.debugLogger) {
+            window.debugLogger.log('Scan card button clicked', 'info');
+        }
         document.getElementById('scanCardBtn').disabled = true;
         document.getElementById('cancelScanBtn').style.display = 'inline-block';
         
         barcodeScanner.scan().then(() => {
+            if (window.debugLogger) {
+                window.debugLogger.log('Scan completed successfully', 'info');
+            }
             document.getElementById('cancelScanBtn').style.display = 'none';
             document.getElementById('scanCardBtn').disabled = false;
         }).catch(error => {
+            if (window.debugLogger) {
+                window.debugLogger.error('Scan failed', error);
+            }
             document.getElementById('cancelScanBtn').style.display = 'none';
             document.getElementById('scanCardBtn').disabled = false;
             showToast('Erreur de scan: ' + error.message, 'error');
         });
     } catch (error) {
+        if (window.debugLogger) {
+            window.debugLogger.error('Scan card error', error);
+        }
         document.getElementById('cancelScanBtn').style.display = 'none';
         document.getElementById('scanCardBtn').disabled = false;
         showToast('Erreur: ' + error.message, 'error');
@@ -273,6 +341,12 @@ function scanCard() {
 }
 
 function handleBarcodeScanned(result) {
+    if (window.debugLogger) {
+        window.debugLogger.log('Barcode scanned', 'info', {
+            text: result.text,
+            format: result.format
+        });
+    }
     barcodeScanner.stop();
     showCardModal({ cardId: result.text, barcodeType: result.format });
     showToast('Code scanné: ' + result.text, 'success');

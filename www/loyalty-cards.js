@@ -10,13 +10,25 @@ class LoyaltyCardManager {
     constructor(storage) {
         this.storage = storage;
         this.cards = [];
+        if (window.debugLogger) {
+            window.debugLogger.log('LoyaltyCardManager initialized', 'info');
+        }
     }
 
     // Charger les cartes depuis le fichier
     async load() {
         try {
+            if (window.debugLogger) {
+                window.debugLogger.log('Loading loyalty cards...', 'info');
+            }
             this.cards = await this.storage.readFile('loyalty-cards.json', []);
+            if (window.debugLogger) {
+                window.debugLogger.log(`Loaded ${this.cards.length} loyalty cards`, 'info');
+            }
         } catch (error) {
+            if (window.debugLogger) {
+                window.debugLogger.error('Error loading loyalty cards', error);
+            }
             this.cards = [];
         }
     }

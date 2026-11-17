@@ -10,19 +10,40 @@ class ShoppingListManager {
         this.storage = storage;
         this.lists = [];
         this.history = [];
+        if (window.debugLogger) {
+            window.debugLogger.log('ShoppingListManager initialized', 'info');
+        }
     }
 
     // Charger les listes depuis le fichier
     async load() {
         try {
+            if (window.debugLogger) {
+                window.debugLogger.log('Loading shopping lists...', 'info');
+            }
             this.lists = await this.storage.readFile('shopping-lists.json', []);
+            if (window.debugLogger) {
+                window.debugLogger.log(`Loaded ${this.lists.length} shopping lists`, 'info');
+            }
         } catch (error) {
+            if (window.debugLogger) {
+                window.debugLogger.error('Error loading shopping lists', error);
+            }
             this.lists = [];
         }
         
         try {
+            if (window.debugLogger) {
+                window.debugLogger.log('Loading shopping history...', 'info');
+            }
             this.history = await this.storage.readFile('history.json', []);
+            if (window.debugLogger) {
+                window.debugLogger.log(`Loaded ${this.history.length} history items`, 'info');
+            }
         } catch (error) {
+            if (window.debugLogger) {
+                window.debugLogger.error('Error loading shopping history', error);
+            }
             this.history = [];
         }
     }

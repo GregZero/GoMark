@@ -13,21 +13,45 @@ class BarcodeScanner {
         this.stream = null;
         this.codeReader = null;
         this.videoElement = null;
+        
+        if (window.debugLogger) {
+            window.debugLogger.log('BarcodeScanner initialized', 'info', {
+                hasCapacitor: typeof window.Capacitor !== 'undefined',
+                hasPlugins: typeof window.Plugins !== 'undefined',
+                userAgent: navigator.userAgent
+            });
+        }
     }
 
     // Méthode principale (détecte l'environnement)
     async scan() {
+        if (window.debugLogger) {
+            window.debugLogger.log('scan() called', 'info');
+        }
+        
         // Vérifier si on est dans une application Capacitor
         if (typeof window.Capacitor !== 'undefined' && typeof window.Plugins !== 'undefined') {
+            if (window.debugLogger) {
+                window.debugLogger.log('Using Capacitor scanner', 'info');
+            }
             return this.scanWithCapacitor();
         } else {
+            if (window.debugLogger) {
+                window.debugLogger.log('Capacitor not available, checking mobile browser', 'info');
+            }
             // Vérifier si on est sur mobile - l'accès caméra peut être limité
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
             if (isMobile && !window.location.href.startsWith('https://') && !window.location.href.includes('localhost') && !window.location.href.includes('127.0.0.1')) {
+                if (window.debugLogger) {
+                    window.debugLogger.log('Mobile browser without HTTPS - camera access blocked', 'error');
+                }
                 throw new Error('Sur mobile, l\'accès à la caméra nécessite HTTPS ou localhost. Essayez l\'APK Android pour un meilleur fonctionnement.');
             }
             
+            if (window.debugLogger) {
+                window.debugLogger.log('Using ZXing scanner', 'info');
+            }
             return this.scanWithZXing();
         }
     }
@@ -35,9 +59,22 @@ class BarcodeScanner {
     // Pour APK Android/iOS (Capacitor)
     async scanWithCapacitor() {
         try {
+            if (window.debugLogger) {
+                window.debugLogger.log('scanWithCapacitor() starting', 'info');
+            }
+            
             // Vérifier que Capacitor et le plugin sont disponibles
             if (typeof window.Capacitor === 'undefined' || typeof window.Plugins === 'undefined') {
+                if (window.debugLogger) {
+                    window.debugLogger.log('Capacitor or Plugins not available', 'error');
+                }
                 throw new Error('Capacitor non disponible. Cette fonctionnalité est réservée à l\'APK Android.');
+            }
+            
+            if (window.debugLogger) {
+                window.debugLogger.log('Plugins available, checking BarcodeScanner', 'info', {
+                    plugins: Object.keys(window.Plugins || {})
+                });
             }
             
             const { BarcodeScanner } = window.Plugins;
