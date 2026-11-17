@@ -54,7 +54,10 @@ jobs:
 
       # ===== 7. Add Android platform =====
       - name: Add Android platform
-        run: npx cap add android
+        run: |
+          # Remove any existing android directory to ensure clean build
+          rm -rf android
+          npx cap add android
 
       # ===== 8. Sync Capacitor =====
       - name: Sync Capacitor
