@@ -6,6 +6,7 @@ www/dist/
 www/build/
 
 # Capacitor
+!directory-picker/
 android/
 !plugins/*/android/
 !directory-picker/*/android/
