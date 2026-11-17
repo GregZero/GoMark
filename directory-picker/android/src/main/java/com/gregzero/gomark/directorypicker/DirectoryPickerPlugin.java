@@ -4,20 +4,29 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 import androidx.documentfile.provider.DocumentFile;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.NativePlugin;
+import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
 
 @NativePlugin
-public class DirectoryPickerPlugin extends com.getcapacitor.Plugin {
+public class DirectoryPickerPlugin extends Plugin {
 
-    @com.getcapacitor.PluginMethod
+    private static final String TAG = "DirectoryPickerPlugin";
+    private static final int REQUEST_CODE_SELECT_DIRECTORY = 1001;
+    private PluginCall savedCall;
+
+    @PluginMethod
     public void selectDirectory(PluginCall call) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             call.reject("Directory selection requires Android 5.0+ (API 21+)");
             return;
         }
+
+        savedCall = call;
 
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         intent.addFlags(
@@ -26,15 +35,21 @@ public class DirectoryPickerPlugin extends com.getcapacitor.Plugin {
             Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
         );
 
-        startActivityForResult(call, intent, "selectDirectoryResult");
+        startActivityForResult(call, intent, REQUEST_CODE_SELECT_DIRECTORY);
     }
 
     @Override
     protected void handleOnActivityResult(int requestCode, int resultCode, Intent data) {
         super.handleOnActivityResult(requestCode, resultCode, data);
 
-        PluginCall savedCall = getSavedCall("selectDirectoryResult");
-        if (savedCall == null) return;
+        if (requestCode != REQUEST_CODE_SELECT_DIRECTORY) {
+            return;
+        }
+
+        if (savedCall == null) {
+            Log.e(TAG, "No saved call for directory selection");
+            return;
+        }
 
         if (resultCode == Activity.RESULT_OK && data != null) {
             Uri treeUri = data.getData();
@@ -57,5 +72,7 @@ public class DirectoryPickerPlugin extends com.getcapacitor.Plugin {
         } else {
             savedCall.error("Directory selection cancelled");
         }
+        
+        savedCall = null;
     }
 }

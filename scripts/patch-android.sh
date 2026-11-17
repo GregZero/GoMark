@@ -14,6 +14,15 @@ if [ -f android/app/build.gradle ]; then
     sed -i '/implementation project.*capacitor-directory-picker/d' android/app/build.gradle
 fi
 
+# Add AndroidX DocumentFile dependency to app/build.gradle
+if [ -f android/app/build.gradle ]; then
+    # Add the dependency if not already present
+    if ! grep -q "androidx.documentfile:documentfile" android/app/build.gradle; then
+        # Find the dependencies block and add the line
+        sed -i '/dependencies {/a\    implementation "androidx.documentfile:documentfile:1.0.1"' android/app/build.gradle
+    fi
+fi
+
 # Create directory for the plugin in the main android project
 mkdir -p android/app/src/main/java/com/gregzero/gomark/directorypicker
 
