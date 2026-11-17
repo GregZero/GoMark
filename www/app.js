@@ -163,11 +163,19 @@ function setupEventListeners() {
     // Select folder
     document.getElementById('selectFolderBtn').addEventListener('click', async () => {
         try {
+            // Vérifier si l'API est disponible avant de tenter
+            if (!storage.isFileSystemAvailable()) {
+                showToast('La sélection de dossier n\'est pas supportée sur mobile. Utilisation du stockage local.', 'info');
+                return;
+            }
+            
             const success = await storage.selectDirectory();
             if (success) {
                 await refreshData();
                 updateSelectedFolderDisplay();
                 showToast('Dossier sélectionné!', 'success');
+            } else {
+                showToast('Sélection de dossier annulée', 'info');
             }
         } catch (error) {
             showToast('Erreur: ' + error.message, 'error');

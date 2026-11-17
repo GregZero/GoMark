@@ -18,13 +18,13 @@ class BarcodeScanner {
     // Méthode principale (détecte l'environnement)
     async scan() {
         // Vérifier si on est dans une application Capacitor
-        if (typeof window.Capacitor !== 'undefined') {
+        if (typeof window.Capacitor !== 'undefined' && typeof window.Plugins !== 'undefined') {
             return this.scanWithCapacitor();
         } else {
             // Vérifier si on est sur mobile - l'accès caméra peut être limité
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            if (isMobile && !window.location.href.startsWith('https://') && !window.location.href.includes('localhost')) {
+            if (isMobile && !window.location.href.startsWith('https://') && !window.location.href.includes('localhost') && !window.location.href.includes('127.0.0.1')) {
                 throw new Error('Sur mobile, l\'accès à la caméra nécessite HTTPS ou localhost. Essayez l\'APK Android pour un meilleur fonctionnement.');
             }
             
@@ -35,7 +35,12 @@ class BarcodeScanner {
     // Pour APK Android/iOS (Capacitor)
     async scanWithCapacitor() {
         try {
-            const { BarcodeScanner } = Plugins;
+            // Vérifier que Capacitor et le plugin sont disponibles
+            if (typeof window.Capacitor === 'undefined' || typeof window.Plugins === 'undefined') {
+                throw new Error('Capacitor non disponible. Cette fonctionnalité est réservée à l\'APK Android.');
+            }
+            
+            const { BarcodeScanner } = window.Plugins;
 
             // Préparer le scanner
             await BarcodeScanner.prepare();
