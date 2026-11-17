@@ -8,6 +8,7 @@ www/build/
 # Capacitor
 android/
 !plugins/*/android/
+!directory-picker/*/android/
 ios/
 
 # IDE
@@ -48,3 +49,4 @@ data/
 
 # Capacitor cache
 .cap/
+!directory-picker/*/android/

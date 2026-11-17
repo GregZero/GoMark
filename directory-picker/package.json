@@ -1,0 +1,17 @@
+{
+  "name": "capacitor-directory-picker",
+  "version": "1.0.0",
+  "description": "Capacitor plugin for selecting directories",
+  "main": "index.js",
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "keywords": ["capacitor", "plugin", "directory", "picker"],
+  "author": "GregZero",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/core": "^5.0.0"
+  }
+}
