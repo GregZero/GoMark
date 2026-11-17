@@ -5,6 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'directory-picker/**'
       - 'www/**'
       - 'package.json'
       - '.github/workflows/**'
